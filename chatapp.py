@@ -2,13 +2,13 @@ import streamlit as st
 from PyPDF2 import PdfReader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import google.generativeai as genai
-from langchain.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.chat_models import ChatOllama
 
 load_dotenv()
 # os.getenv("GOOGLE_API_KEY")
@@ -31,13 +31,13 @@ def get_text_chunks(text):
 
 
 def get_vector_store(text_chunks):
-    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
+    # Use a local HuggingFace model for embeddings (e.g., all-MiniLM-L6-v2)
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
     vector_store.save_local("faiss_index")
 
 
 def get_conversational_chain():
-
     prompt_template = """
     Answer the question as detailed as possible from the provided context, make sure to provide all the details, if the answer is not in
     provided context just say, "answer is not available in the context", don't provide the wrong answer\n\n
@@ -46,29 +46,24 @@ def get_conversational_chain():
 
     Answer:
     """
+    # Use a local Ollama model (e.g., llama3)
+    model = ChatOllama(model="llama3.2", temperature=0.3)
 
-    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.3)
-
-    prompt = PromptTemplate(template = prompt_template, input_variables = ["context", "question"])
+    prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
-
     return chain
 
 
 
 def user_input(user_question):
-    embeddings = GoogleGenerativeAIEmbeddings(model = "models/embedding-001")
-    
-    new_db = FAISS.load_local("faiss_index", embeddings)
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    new_db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
     docs = new_db.similarity_search(user_question)
-
     chain = get_conversational_chain()
-
-    
     response = chain(
-        {"input_documents":docs, "question": user_question}
-        , return_only_outputs=True)
-
+        {"input_documents": docs, "question": user_question},
+        return_only_outputs=True
+    )
     print(response)
     st.write("Reply: ", response["output_text"])
 
@@ -86,7 +81,7 @@ def main():
 
     with st.sidebar:
 
-        st.image("img/Robot.jpg")
+        
         st.write("---")
         
         st.title("📁 PDF File's Section")
@@ -99,14 +94,14 @@ def main():
                 st.success("Done")
         
         st.write("---")
-        st.image("img/gkj.jpg")
-        st.write("AI App created by @ Gurpreet Kaur")  # add this line to display the image
+        
+        st.write("AI App created by @ Filhi Oussama")  # add this line to display the image
 
 
     st.markdown(
         """
         <div style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: #0E1117; padding: 15px; text-align: center;">
-            © <a href="https://github.com/gurpreetkaurjethra" target="_blank">Gurpreet Kaur Jethra</a> | Made with ❤️
+            © <a href="https://github.com/Ofilhi" target="_blank">Filhi Oussama</a> 
         </div>
         """,
         unsafe_allow_html=True

@@ -13,7 +13,7 @@ The Multi-PDF's Chat Agent is a Streamlit-based web application designed to faci
 ![Demo 1: Chatbot Output](img/LLMframework.jpg)
 
 ## 🎯 How It Works:
-------------
+------------  
 
 ![MultiPDF Chat App Diagram](img/Architecture.jpg)
 
